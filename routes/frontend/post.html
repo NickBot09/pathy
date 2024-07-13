@@ -1,0 +1,79 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Post</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
+    </head>
+
+    <body class="container text-bg-dark">
+        <header class="d-flex justify-content-center py-3">
+            <ul class="nav nav-pills">
+              <li class="nav-item"><a href="/dashboard" class="nav-link">Home</a></li>
+              <li class="nav-item"><a href="/saved-posts" class="nav-link">Saved Post</a></li>
+              <li class="nav-item"><a href="#" class="nav-link active" aria-current="page" id="postnum">Post 1</a></li>
+              <li class="nav-item"><a href="/submit-url" class="nav-link" id="submit-url">Deliver Exploit</a></li>
+              <li class="nav-item"><input type="button" class="nav-link" value="Logout" id="logout"></li>
+            </ul>
+        </header>
+
+        <h3 id="post-title" class="pt-2"></h3>
+        <p id="post-description"></p>
+
+        <button id="save" class="btn btn-primary">Save Post</button>
+        <p id="save-res"></p>
+        <a href="#" id="nextPost">View Next Post</a>
+
+        <script>
+            async function renderPost() {
+                const searchParams = new URLSearchParams(window.location.search);
+                const postId = searchParams.get('postId');
+                console.log(postId);
+                const token = localStorage.getItem('token')
+                const data = await fetch(`/api/v1/posts/postid/${postId}`, {method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization':token}, body: JSON.stringify({id:postId})})
+                console.log(data.status)
+                const res = await data.json()
+
+                if(data.status == 404) {
+                    $('#post-title').text('Post not available')
+                }
+
+                if(data.status == 403) {
+                    window.location.href = '/login'
+                } else {
+                    $('#post-title').text(res.data.title) 
+                    $('#post-description').html(res.data.des)
+                    $('#postnum').text('Post ' + res.data.id)
+                    const nextPostId = Number(res.data.id) + 1
+                    if (nextPostId - 1 < 8) {
+                        $('#nextPost').attr('href',`/post?postId=${nextPostId}`)
+                    } else {
+                        return
+                    }
+                    
+                }
+            }
+            
+            document.onload = renderPost()
+
+            $('#save').on('click', async (req, res) => {
+                const searchParams = new URLSearchParams(window.location.search);
+                const postId = searchParams.get('postId');
+                console.log(postId);
+                const token = localStorage.getItem('token')
+                const data2 = await fetch('/api/v1/posts/save-post', {method: 'POST', headers: {'Content-Type':'application/json','Authorization':token}, body: JSON.stringify({id:postId})})
+                const res2 = await data2.json()
+                $('#save-res').text(res2.msg)
+            })
+
+            
+
+            $('#logout').on('click', () => {
+                localStorage.clear()
+                window.location.href = '/login'
+            })
+        </script>
+    </body>
+</html>
